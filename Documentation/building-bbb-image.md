@@ -15,10 +15,10 @@ This guide provides a concise set of instructions to build an embedded Linux ima
 
 1. **Clone the Yocto Project Repository**
 
-   Begin by cloning the Yocto Project repository `poky` branch `kirkstone`.
+   Begin by cloning the Yocto Project repository `poky` branch `nanbield`.
 
    ```bash
-   git clone -b kirkstone https://git.yoctoproject.org/git/poky
+   git clone -b nanbield https://git.yoctoproject.org/git/poky
    ```
 
 2. **Initialize the Build Environment**

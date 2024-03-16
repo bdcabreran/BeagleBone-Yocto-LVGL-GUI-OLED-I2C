@@ -2,6 +2,12 @@
 
 This project aims to integrate a graphical user interface (GUI) created with LVGL (Light and Versatile Graphics Library) displayed on an SSD1306 OLED screen, controlled by a BeagleBone board. The project will demonstrate the process of setting up a Yocto-based Linux image, integrating LVGL, interfacing with the SSD1306 OLED display, and creating a simple yet interactive GUI application.
 
+
+<img src="Documentation/img/bbb.png" width="300">
+<img src="Documentation/img/lcd.png" width="250">
+<img src="Documentation/img/lvgl.png" width="300">
+
+
 ## Project Objectives
 
 - To build a custom Linux image using Yocto Project for BeagleBone.
@@ -22,7 +28,7 @@ This project aims to integrate a graphical user interface (GUI) created with LVG
 1. Clone the Poky repository from the Yocto Project:
 
     ```bash
-    git clone -b dunfell git://git.yoctoproject.org/poky.git yocto-dunfell
+    git clone -b nanbield git://git.yoctoproject.org/poky.git my-nanbield
     ```
 
 2. Initialize the Yocto build environment:
