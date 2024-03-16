@@ -1,0 +1,46 @@
+# General
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+
+# Yocto build artifacts and temporary directories
+build/bitbake-cookerdaemon.log
+build/cache/
+build/tmp/
+build/sstate-cache/
+build/downloads/
+
+# Notes and personal documentation
+Notes/
+
+# Docker-related ignores (optional, if you build Docker images within this directory)
+# Dockerfile
+*.tar
+*.tar.gz
+
+# Ignore specific scripts or personal scripts (optional)
+# scripts/run_quemu.md # Uncomment if you decide to exclude specific scripts or documentation
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
