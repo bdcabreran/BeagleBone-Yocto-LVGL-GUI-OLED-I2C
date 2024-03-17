@@ -20,7 +20,7 @@ if [[ $confirmation != "y" && $confirmation != "Y" ]]; then
 fi
 
 # Define the path to the image file
-IMAGE_PATH="../../build/tmp/deploy/images/beaglebone-yocto/core-image-minimal-beaglebone-yocto.wic"
+IMAGE_PATH="../../build/tmp/deploy/images/beaglebone-yocto/core-image-minimal-beaglebone-yocto.rootfs.wic"
 
 # Check if the image file exists
 if [ ! -f "$IMAGE_PATH" ]; then

@@ -1,1 +1,3 @@
 bitbake-layers show-recipes | grep lvgl
+
+Use devtool modify <recipe-name> to set up a workspace where you can directly modify the source code of your driver. devtool will automatically fetch the source and prepare it for you.
