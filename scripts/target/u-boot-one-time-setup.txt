@@ -1,5 +1,5 @@
 
-# Interrupt the U-Boot autoboot sequence by pressing a key when prompted. (you only have to do this once)
+# Interrupt the U-Boot autoboot sequence by pressing a key when prompted. (you only have to do this once in case u-boot do not search for uEnv.txt automatically)
 
 load mmc 0:1 ${loadaddr} uEnv.txt
 env import -t ${loadaddr} ${filesize}
