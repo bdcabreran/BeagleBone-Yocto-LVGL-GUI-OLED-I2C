@@ -35,7 +35,7 @@
                 "vsciot-vscode.vscode-device-tree", // DeviceTree support, essential for working with hardware descriptions in embedded systems
                 "gruntfuggly.todo-tree", // Highlights TODOs, FIXMEs, and any keywords, useful for keeping track of tasks within the codebase
                 "slevesque.shader", // Shader languages support if you're working with graphical applications within your project
-                "yocto-project.yocto-bitbake", 
+                // "yocto-project.yocto-bitbake", 
                 "ms-vscode.cpptools-extension-pack", 
                 "ms-vscode.makefile-tools"
             ]

@@ -22,5 +22,8 @@
     },
     "bitbake.buildConfigurations": [
         
-    ]
+    ],
+    "files.associations": {
+        "i2c-dev.h": "c"
+    }
 }

@@ -12,7 +12,7 @@
                 "__KERNEL__",
                 "CONFIG_ARM"
             ],
-            // "compilerPath": "/yocto/build/tmp/sysroots/x86_64-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc",
+            "compilerPath": "/yocto/build/tmp/sysroots-components/x86_64/gcc-cross-arm/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc",
             "cStandard": "gnu11",
             "cppStandard": "gnu++14",
             "intelliSenseMode": "gcc-arm",
