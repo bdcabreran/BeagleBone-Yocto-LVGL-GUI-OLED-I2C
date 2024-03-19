@@ -1,0 +1,8 @@
+// ssd1306.dtsi
+&i2c2 {
+    ssd1306_display: ssd1306@3C {
+        compatible = "vendor,ssd1306";
+        reg = <0x3C>;
+        status="okay"
+    };
+};

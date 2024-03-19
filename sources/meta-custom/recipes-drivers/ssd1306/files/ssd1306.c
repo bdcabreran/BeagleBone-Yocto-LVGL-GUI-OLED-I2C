@@ -26,12 +26,10 @@ static int ssd1306_probe(struct i2c_client *client, const struct i2c_device_id *
 }
 
 // Remove function called when the I2C device is removed
-static int ssd1306_remove(struct i2c_client *client)
+static void ssd1306_remove(struct i2c_client *client)
 {
     printk(KERN_INFO "SSD1306: OLED device removed\n");
     // Cleanup code here, if necessary
-
-    return 0;
 }
 
 // I2C device ID table

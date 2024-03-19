@@ -37,7 +37,8 @@
                 "slevesque.shader", // Shader languages support if you're working with graphical applications within your project
                 // "yocto-project.yocto-bitbake", 
                 "ms-vscode.cpptools-extension-pack", 
-                "ms-vscode.makefile-tools"
+                "ms-vscode.makefile-tools", 
+                "plorefice.devicetree"
             ]
         }
     },
