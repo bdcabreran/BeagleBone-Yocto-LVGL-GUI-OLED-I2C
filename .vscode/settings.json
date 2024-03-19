@@ -20,7 +20,7 @@
         "files.eol": "\n",
         "files.trimTrailingWhitespace": false
     },
-    "files.associations": {
-        "init.h": "c"
-    }
+    "bitbake.buildConfigurations": [
+        
+    ]
 }
