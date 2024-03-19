@@ -24,6 +24,7 @@
         
     ],
     "files.associations": {
-        "i2c-dev.h": "c"
+        "i2c-dev.h": "c",
+        "ssd1306.h": "c"
     }
 }

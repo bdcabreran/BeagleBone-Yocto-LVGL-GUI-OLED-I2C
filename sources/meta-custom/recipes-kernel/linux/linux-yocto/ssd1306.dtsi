@@ -3,6 +3,8 @@
     ssd1306_display: ssd1306@3C {
         compatible = "vendor,ssd1306";
         reg = <0x3C>;
-        status="okay"
+        oled-lines = <64>;
+        oled-columns = <128>;
+        status="okay";
     };
 };
