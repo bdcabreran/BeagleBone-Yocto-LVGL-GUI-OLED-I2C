@@ -1,3 +1,9 @@
 bitbake-layers show-recipes | grep lvgl
 
 Use devtool modify <recipe-name> to set up a workspace where you can directly modify the source code of your driver. devtool will automatically fetch the source and prepare it for you.
+
+list i2c devices: i2cdetect -l 
+scan i2c devices: i2cdetect -r 2
+
+// convert the DTB back into a human-readable DTS format:
+fdtdump am335x-boneblack.dtb > dumped.dts

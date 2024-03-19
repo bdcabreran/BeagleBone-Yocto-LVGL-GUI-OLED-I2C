@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     xz-utils debianutils iputils-ping libsdl1.2-dev xterm \
     locales sudo bash-completion software-properties-common \
     pylint python3-subunit mesa-common-dev vim nano tree liblz4-tool zstd \
-    minicom
+    minicom device-tree-compiler
 
 # Set the locale to avoid any locale issues during the build
 RUN locale-gen en_US.UTF-8
