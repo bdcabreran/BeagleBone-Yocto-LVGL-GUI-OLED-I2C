@@ -5,6 +5,13 @@
 #include <string.h>
 #include <stdint.h>
 #include <getopt.h>
+#include "gif_code/exchange.h"
+#include "gif_code/global.h"
+#include "gif_code/penguin.h"
+#include "img_code/rocket.h"
+#include "img_code/linux_img1.h"
+#include "img_code/linux_img2.h"
+
 
 #define SSD1306_128_64_LINES        64
 #define SSD1306_128_32_LINES        32
@@ -23,6 +30,7 @@ typedef enum {
     SSD1306_CMD_CLEAR_SCREEN,       // Corresponds to ssd1306_oled_clear_screen
     SSD1306_CMD_DRAW_PIXEL,         // Corresponds to ssd1306_oled_draw_pixel
     SSD1306_CMD_DRAW_AREA,          // Corresponds to ssd1306_oled_draw_area
+    SSD1306_CMD_DRAW_GIF,
     SSD1306_CMD_LAST
 }ssd1306_commands_t;
 
@@ -59,6 +67,16 @@ typedef struct
     uint8_t state; // 1-on, 0-off
 }display_flip_payload_t;
 
+typedef struct
+{
+    uint8_t x;
+    uint8_t y;
+    uint8_t width;
+    uint8_t height;
+    uint8_t  gif_index;
+    uint16_t frame_count;
+    uint16_t frame_size;
+}gif_payload_t;
 
 typedef union 
 {
@@ -67,6 +85,7 @@ typedef union
     rotate_screen_payload_t rotate;
     horizontal_flip_payload_t horizontal_flip;
     display_flip_payload_t  display_flip;
+    gif_payload_t           display_gif;
 }payload_u;
 
 typedef struct {
@@ -86,18 +105,15 @@ typedef union ssd1306_data_packet {
 #define MAX_VALID_VALUE 255
 
 void print_usage() {
-    printf("Usage:\n");
-    printf("  -h        Help (shows this usage information)\n");
-    printf("  -c        Clear screen (no additional parameters required)\n");
-    printf("  -r <angle> Set rotate angle (0 or 180)\n");
-    printf("  -f <state> Display flip (1 or 0 for on/off)\n");
-    printf("  -z <state> Horizontal flip (1 or 0 for on/off)\n");
-    printf("  -p <X> <Y> <state> Set pixel at X,Y with state S (1 for on, 0 for off)\n");
-    printf("  -a <X> <Y> <W> <H> <data> Draw area at X,Y with width W, height H, and data index I\n");
-    printf("            X and Y specify the top-left corner of the area.\n");
-    printf("            W and H specify the width and height of the area.\n");
-    printf("            <data> should be a binary representation of the image data,\n");
-    printf("            encoded in a way that matches the driver's expectations.\n");
+printf("Usage:\n");
+printf(" -h Help (shows this usage information)\n");
+printf(" -c Clear screen (no additional parameters required)\n");
+printf(" -r <angle> Set rotate angle (0 or 180)\n");
+printf(" -f <state> Display flip (1 or 0 for on/off)\n");
+printf(" -z <state> Horizontal flip (1 or 0 for on/off)\n");
+printf(" -p <X> <Y> <state> Set pixel at X,Y with state S (1 for on, 0 for off)\n");
+printf(" -g <X> <Y> <N> Display Gif Animation at X,Y with N as gif index, [0, 1 or 2]\n");
+printf(" -a <X> <Y> <N> Draw area (Image) at X,Y with N as img index, [0, 1 or 2]\n");
 }
 
 
@@ -107,6 +123,7 @@ void handle_f_command(int argc, char *argv[], ssd1306_command_data_t *packet);
 void handle_z_command(int argc, char *argv[], ssd1306_command_data_t *packet);
 void handle_p_command(int argc, char *argv[], ssd1306_command_data_t *packet);
 void handle_a_command(int argc, char *argv[], ssd1306_command_data_t *packet);
+void handle_g_command(int argc, char *argv[], ssd1306_command_data_t *packet);
 
 
 
@@ -141,6 +158,9 @@ int main(int argc, char **argv) {
     else if (is_cmd(argc, argv, "-z")){
        handle_z_command(argc, argv, &packet); 
     }  
+    else if (is_cmd(argc, argv, "-g")){
+        handle_g_command(argc, argv, &packet);
+    }
     else if (is_cmd(argc, argv, "-h")){
         print_usage();
     }
@@ -160,13 +180,60 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    // Calculate the total size to write based on the command
-    size_t write_size = sizeof(packet.command) + sizeof(packet.length) + packet.length;
+    if (packet.command == SSD1306_CMD_DRAW_GIF)
+    {
+        gif_payload_t gif;
+        memcpy((uint8_t *)&gif, (uint8_t *)&packet.payload.display_gif, sizeof(gif_payload_t));
 
-    if (write(fd, &packet, write_size) < 0) {
-        perror("Failed to write command to the device");
-        close(fd);
-        return EXIT_FAILURE;
+        packet.command = SSD1306_CMD_DRAW_AREA;
+        packet.length = sizeof(draw_area_payload_t); // Ensure this struct exists and is correctly sized
+        packet.payload.draw_area.x = gif.x;
+        packet.payload.draw_area.y = gif.y;
+        packet.payload.draw_area.width = gif.width;
+        packet.payload.draw_area.height = gif.height;
+        uint8_t **frame_data_ptr = NULL;
+
+        switch (gif.gif_index) {
+        case 0:
+            frame_data_ptr = global_frames_data;
+            break;
+        case 1:
+            frame_data_ptr = exchange_frames_data;
+            break;
+        case 2:
+            frame_data_ptr = penguin_frames_data;
+            break;        
+        default:
+            return EXIT_FAILURE; // Assuming the function returns an int for error handling
+        }
+        
+        for (size_t frame_idx = 0; frame_idx < gif.frame_count; frame_idx++)
+        {
+            // Access the pointer to the current frame's data from the selected array
+            const uint8_t* current_frame_data = frame_data_ptr[frame_idx];
+            
+            memcpy(packet.payload.draw_area.data, current_frame_data, gif.frame_size);
+            // Calculate the total size to write based on the command
+            size_t write_size = sizeof(packet.command) + sizeof(packet.length) + packet.length;
+
+            if (write(fd, &packet, write_size) < 0)
+            {
+                perror("Failed to write command to the device");
+                close(fd);
+                return EXIT_FAILURE;
+            }
+        }
+    }
+    else 
+    {
+        // Calculate the total size to write based on the command
+        size_t write_size = sizeof(packet.command) + sizeof(packet.length) + packet.length;
+
+        if (write(fd, &packet, write_size) < 0) {
+            perror("Failed to write command to the device");
+            close(fd);
+            return EXIT_FAILURE;
+        }
     }
 
     printf("Command sent to %s\n", device_path);
@@ -230,7 +297,8 @@ void handle_p_command(int argc, char *argv[], ssd1306_command_data_t *packet)
 
 void handle_a_command(int argc, char *argv[], ssd1306_command_data_t *packet)
 {
-    if (argc != 7) {
+    if (argc != 5)
+    {
         fprintf(stderr, "Not enough arguments for -a option\n");
         print_usage();
         return;
@@ -240,11 +308,33 @@ void handle_a_command(int argc, char *argv[], ssd1306_command_data_t *packet)
     packet->length = sizeof(draw_area_payload_t); // Ensure this struct exists and is correctly sized
     packet->payload.draw_area.x = (uint8_t)atoi(argv[2]);
     packet->payload.draw_area.y = (uint8_t)atoi(argv[3]);
-    packet->payload.draw_area.width = (uint8_t)atoi(argv[4]);
-    packet->payload.draw_area.height = (uint8_t)atoi(argv[5]);
+    uint8_t img_idx = (uint8_t)atoi(argv[4]);
 
-    printf("Parsed value for -a: %d %d %d %d %d\n", packet->payload.draw_area.x, \
-    packet->payload.draw_area.y, packet->payload.draw_area.width, packet->payload.draw_area.height);
+    printf("Drawing Demo Image %d\n", img_idx);
+
+    switch (img_idx)
+    {
+    case 0:
+        packet->payload.draw_area.width = linux_img1_width;
+        packet->payload.draw_area.height = linux_img1_height;
+        memcpy(packet->payload.draw_area.data, linux_img1_data, linux_img1_size);
+        break;
+    case 1:
+        packet->payload.draw_area.width = linux_img2_width;
+        packet->payload.draw_area.height = linux_img2_height;
+        memcpy(packet->payload.draw_area.data, linux_img2_data, linux_img2_size);
+        break;
+    case 2:
+        packet->payload.draw_area.width = rocket_width;
+        packet->payload.draw_area.height = rocket_height;
+        memcpy(packet->payload.draw_area.data, rocket_data, rocket_size);
+        break;
+    default:
+        fprintf(stderr, "Img index not supported try [0, 1 or 2]\n");
+        break;
+    }
+
+    printf("Parsed value for -a: %d %d %d\n", packet->payload.draw_area.x, packet->payload.draw_area.y, img_idx);
 }
 
 void handle_f_command(int argc, char *argv[], ssd1306_command_data_t *packet){
@@ -289,5 +379,52 @@ void handle_z_command(int argc, char *argv[], ssd1306_command_data_t *packet){
         fprintf(stderr, "Invalid argument for -z option. Must be 0 or 1.\n");
         print_usage();
         return;
+    }
+}
+
+void handle_g_command(int argc, char *argv[], ssd1306_command_data_t *packet)
+{
+    if (argc != 5)
+    {
+        fprintf(stderr, "Not enough arguments for -g option\n");
+        print_usage();
+        return;
+    }
+
+    packet->command = SSD1306_CMD_DRAW_GIF;
+    packet->length = sizeof(gif_payload_t); // Ensure this struct exists and is correctly sized
+    packet->payload.display_gif.x = (uint8_t)atoi(argv[2]);
+    packet->payload.display_gif.y = (uint8_t)atoi(argv[3]);
+    packet->payload.display_gif.gif_index = (uint8_t)atoi(argv[4]);
+
+    // Calculate the total size to write based on the command
+    printf("Displaying Demo Gif %d\n", packet->payload.display_gif.gif_index);
+
+    switch (packet->payload.display_gif.gif_index)
+    {
+    case 0:
+        packet->payload.display_gif.width = global_frame_width;
+        packet->payload.display_gif.height = global_frame_height;
+        packet->payload.display_gif.frame_count = global_frame_count;
+        packet->payload.display_gif.frame_size = global_frame_size;
+        break;
+
+    case 1:
+        packet->payload.display_gif.width = exchange_frame_width;
+        packet->payload.display_gif.height = exchange_frame_height;
+        packet->payload.display_gif.frame_count = exchange_frame_count;
+        packet->payload.display_gif.frame_size = exchange_frame_size;
+        break;
+
+    case 2:
+        packet->payload.display_gif.width = penguin_frame_width;
+        packet->payload.display_gif.height = penguin_frame_height;
+        packet->payload.display_gif.frame_count = penguin_frame_count;
+        packet->payload.display_gif.frame_size = penguin_frame_size;
+        break;
+
+    default:
+        fprintf(stderr, "Git index not supported try [0, 1 or 2]\n");
+        break;
     }
 }

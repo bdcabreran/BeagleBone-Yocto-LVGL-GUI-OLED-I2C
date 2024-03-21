@@ -11,7 +11,8 @@ build/cache/
 build/tmp/
 build/sstate-cache/
 build/downloads/
-
+scripts/host/gif-converter/frames
+scripts/host/img-converter/generated_bmp
 # Notes and personal documentation
 Notes/
 

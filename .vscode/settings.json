@@ -31,6 +31,7 @@
         "fcntl.h": "c",
         "cstdlib": "c",
         "*.x": "c",
-        "cstdint": "c"
+        "cstdint": "c",
+        "linux_logo.h": "c"
     }
 }

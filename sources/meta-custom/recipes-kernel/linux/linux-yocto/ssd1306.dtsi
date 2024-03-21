@@ -1,10 +1,11 @@
 // ssd1306.dtsi
 &i2c2 {
+    clock-frequency = <400000>; // Set I2C2 bus speed to 400kHz
     ssd1306_display: ssd1306@3C {
         compatible = "vendor,ssd1306";
         reg = <0x3C>;
         oled-lines = <64>;
         oled-columns = <128>;
-        status="okay";
+        status = "okay";
     };
 };
