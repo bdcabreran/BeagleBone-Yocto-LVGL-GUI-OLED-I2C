@@ -53,4 +53,70 @@
 #define SSD1306_128_32_COLUMNS      128
 #define SSD1306_64_48_COLUMNS       64
 
+typedef enum {
+    SSD1306_CMD_INVALID,
+    SSD1306_CMD_SET_ROTATE,         // Corresponds to ssd1306_oled_set_rotate
+    SSD1306_CMD_HORIZONTAL_FLIP,    // Corresponds to ssd1306_oled_horizontal_flip
+    SSD1306_CMD_DISPLAY_FLIP,       // Corresponds to ssd1306_oled_display_flip
+    SSD1306_CMD_CLEAR_SCREEN,       // Corresponds to ssd1306_oled_clear_screen
+    SSD1306_CMD_DRAW_PIXEL,         // Corresponds to ssd1306_oled_draw_pixel
+    SSD1306_CMD_DRAW_AREA,          // Corresponds to ssd1306_oled_draw_area
+    SSD1306_CMD_LAST
+}ssd1306_commands_t;
+
+#define IS_VALID_CMD(cmd) (cmd > SSD1306_CMD_INVALID & cmd < SSD1306_CMD_LAST)
+typedef struct 
+{
+    uint8_t  x; 
+    uint8_t  y;
+    uint8_t  width;
+    uint8_t  height;
+    uint8_t  data[(SSD1306_128_64_COLUMNS * SSD1306_128_64_LINES) / 8];
+} draw_area_payload_t;
+
+typedef struct 
+{
+    uint8_t  x; 
+    uint8_t  y;
+    uint8_t  state; // 1-on, 0-off
+}draw_pixel_payload_t;
+
+typedef struct
+{
+    uint8_t angle; // only degree 0 and 180
+}rotate_screen_payload_t;
+
+typedef struct
+{
+    uint8_t state; // 1-on, 0-off
+}horizontal_flip_payload_t;
+
+typedef struct
+{
+    uint8_t state; // 1-on, 0-off
+}display_flip_payload_t;
+
+
+typedef union 
+{
+    draw_pixel_payload_t    draw_pixel;
+    draw_area_payload_t     draw_area;
+    rotate_screen_payload_t rotate;
+    horizontal_flip_payload_t horizontal_flip;
+    display_flip_payload_t  display_flip;
+}payload_u;
+
+typedef struct {
+    ssd1306_commands_t command;
+    uint16_t length;
+    payload_u payload;
+} ssd1306_command_data_t;
+
+#define MAX_COMMAND_SIZE sizeof(ssd1306_command_data_t) // Define according to the actual size required
+
+typedef union ssd1306_data_packet {
+    ssd1306_command_data_t data;
+    uint8_t raw[MAX_COMMAND_SIZE];
+} ssd1306_data_packet_u;
+
 #endif

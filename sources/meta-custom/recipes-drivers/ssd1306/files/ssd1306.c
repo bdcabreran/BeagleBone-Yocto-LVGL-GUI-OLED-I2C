@@ -3,8 +3,11 @@
 #include <linux/kernel.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
-#include <linux/delay.h>  // For msleep
-#include <linux/string.h> // For memset
+#include <linux/delay.h>  
+#include <linux/string.h> 
+#include <linux/cdev.h>
+#include <linux/fs.h>
+#include <linux/uaccess.h> // For copy_from_user
 #include "ssd1306.h"
 
 MODULE_LICENSE("GPL");
@@ -19,9 +22,20 @@ struct ssd1306_dev {
     uint8_t max_lines; 
     uint8_t x; 
     uint8_t y;
-    uint8_t data_buff[1024];
-    uint8_t framebuffer[(128 * 64) / 8];
+    uint8_t data_buff[100];
+    uint8_t framebuffer[(SSD1306_128_64_COLUMNS * SSD1306_128_64_LINES) / 8];
 };
+
+
+struct ssd1306_char_dev {
+    struct ssd1306_dev ssd1306;     // SSD1306 device
+    struct cdev cdev;               // Character device structure
+};
+
+static int major_number;
+static struct class* ssd1306_class = NULL;
+static struct device *ssd1306_device = NULL;
+static dev_t dev_num;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -262,6 +276,8 @@ uint8_t ssd1306_oled_clear_screen(struct ssd1306_dev *dev)
 {
     uint8_t rc = 0;
     uint8_t i;
+
+    memset(dev->framebuffer, 0x00, sizeof(dev->framebuffer));
     
     for (i = 0; i < (dev->max_lines / 8); i++)
         rc += ssd1306_oled_clear_line(dev, i);
@@ -313,7 +329,7 @@ uint8_t ssd1306_oled_update_display(struct ssd1306_dev *dev) {
 }
 
 
-uint8_t ssd1306_oled_default_config(struct i2c_client *client, struct ssd1306_dev *dev)
+uint8_t ssd1306_oled_default_config(struct ssd1306_dev *dev)
 {
     int ret, i = 0;
 
@@ -372,7 +388,7 @@ uint8_t ssd1306_oled_default_config(struct i2c_client *client, struct ssd1306_de
 }
 
 void ssd1306_oled_draw_area(struct ssd1306_dev *dev, const uint8_t *image_data, int image_width, int image_height, int start_x, int start_y) {
-    pr_info("Starting to draw the image...\n");
+    pr_info("Starting to draw area...\n");
     // Ensure the starting point and image dimensions do not exceed the display boundaries
     // Adjust start_x and start_y if they are out of bounds to prevent buffer underflow
     if (start_x < 0) start_x = 0;
@@ -409,21 +425,134 @@ void ssd1306_oled_test_image(struct ssd1306_dev *dev) {
 }
 
 
+///////////////// Implement File Operations //////////////////////////
+
+static int ssd1306_open(struct inode *inode, struct file *file) {
+    struct ssd1306_char_dev *dev;
+
+    dev = container_of(inode->i_cdev, struct ssd1306_char_dev, cdev);
+    file->private_data = dev; // Store a pointer to the device structure for other operations
+
+    printk(KERN_INFO "SSD1306 device opened\n");
+    return 0;
+}
+
+static ssize_t ssd1306_write(struct file *file, const char __user *buffer, size_t len, loff_t *offset) {
+    printk(KERN_INFO "SSD1306 device write request\n");
+    
+    struct ssd1306_char_dev *dev = file->private_data;
+
+    // Ensure 'dev' and other critical pointers are not NULL.
+    if (!dev || !dev->ssd1306.client) {
+        printk(KERN_ERR "SSD1306: Device structure or critical component uninitialized\n");
+        return -EFAULT;
+    }
+
+    ssd1306_data_packet_u packet;
+
+    if(len > MAX_COMMAND_SIZE || copy_from_user((uint8_t*)packet.raw, buffer, len)) {
+        return -EFAULT;
+    }
+
+    printk(KERN_INFO "SSD1306 received command = [%d]\n", packet.data.command);
+
+    // Parse command
+    switch (packet.data.command)
+    {
+    case SSD1306_CMD_SET_ROTATE:
+    {
+        ssd1306_oled_set_rotate(&dev->ssd1306, packet.data.payload.rotate.angle);
+    }
+    break;
+    case SSD1306_CMD_HORIZONTAL_FLIP:
+    {
+        ssd1306_oled_horizontal_flip(&dev->ssd1306, packet.data.payload.horizontal_flip.state);
+    }
+    break;
+    case SSD1306_CMD_DISPLAY_FLIP:
+    {
+        ssd1306_oled_display_flip(&dev->ssd1306, packet.data.payload.display_flip.state);
+    }
+    break;
+
+    case SSD1306_CMD_CLEAR_SCREEN:
+    {
+        ssd1306_oled_clear_screen(&dev->ssd1306);
+    }
+    break;
+    case SSD1306_CMD_DRAW_PIXEL:
+    {
+        uint8_t x = packet.data.payload.draw_pixel.x;
+        uint8_t y = packet.data.payload.draw_pixel.y;
+        uint8_t state = packet.data.payload.draw_pixel.state; // on, off
+
+        ssd1306_oled_draw_pixel(&dev->ssd1306, x, y, state);
+        ssd1306_oled_update_display(&dev->ssd1306);
+    }
+    break;
+
+    case SSD1306_CMD_DRAW_AREA:
+    {
+        uint8_t x = packet.data.payload.draw_area.x;
+        uint8_t y = packet.data.payload.draw_area.y;
+        uint8_t width = packet.data.payload.draw_area.width;
+        uint8_t heigh = packet.data.payload.draw_area.height;
+        uint8_t *image_data = packet.data.payload.draw_area.data;
+
+        if (width == 0 || heigh == 0) {
+            printk(KERN_INFO "SSD1306 invalid width or heigh, Loading demo image\n");
+            ssd1306_oled_test_image(&dev->ssd1306);
+        }
+        else {
+            ssd1306_oled_draw_area(&dev->ssd1306, image_data, width, heigh, x, y);
+        }
+    }
+    break;
+
+    default:
+        printk(KERN_WARNING "SSD1306 Unsupported command\n");
+        return -EINVAL;
+    }
+
+    return len;
+}
+
+static struct file_operations ssd1306_fops = {
+    .owner = THIS_MODULE,
+    .open = ssd1306_open,
+    .write = ssd1306_write,
+    // other operations...
+};
+
+/////////////////////////////////////////////////////////////////////////
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // Probe function called when a matching I2C device is found
 static int ssd1306_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-    struct ssd1306_dev *dev;
-
+    int err;
     // you generally do not need to explicitly free memory allocated with devm_kzalloc()
-    dev = devm_kzalloc(&client->dev, sizeof(struct ssd1306_dev), GFP_KERNEL);
+    struct ssd1306_char_dev *dev = devm_kzalloc(&client->dev, sizeof(struct ssd1306_char_dev), GFP_KERNEL);
     if (!dev)
-    return -ENOMEM;
+        return -ENOMEM;
 
-    dev->client = client;
-
+    dev->ssd1306.client = client;
     printk(KERN_INFO "SSD1306: OLED device found at addr 0x%x\n", client->addr);
+
+
+    // Initialize the cdev structure and add it to the kernel
+    // struct cdev *ssd1306_cdev = cdev_alloc();
+    cdev_init(&dev->cdev, &ssd1306_fops); // Initialize cdev in your device structure
+    dev->cdev.owner = THIS_MODULE;
+
+    err = cdev_add(&dev->cdev, dev_num, 1);
+    if (err) {
+        printk(KERN_ERR "cdev_add failed\n");
+        class_destroy(ssd1306_class);
+        unregister_chrdev_region(dev_num, 1);
+        return err;
+    }
 
     uint32_t oled_lines, oled_columns;
     // Attempt to read the display resolution from the device tree
@@ -435,27 +564,38 @@ static int ssd1306_probe(struct i2c_client *client, const struct i2c_device_id *
 
     printk(KERN_INFO "SSD1306: Display resolution set to %ux%u\n", oled_columns, oled_lines);
 
-    dev->max_columns = oled_columns;
-    dev->max_lines = oled_lines;
-    dev->x = 0;
-    dev->y = 0;
+    dev->ssd1306.max_columns = oled_columns;
+    dev->ssd1306.max_lines = oled_lines;
+    dev->ssd1306.x = 0;
+    dev->ssd1306.y = 0;
 
     // Store the device structure pointer for later retrieval
     i2c_set_clientdata(client, dev);
 
+   // After successfully setting up cdev and allocating major/minor numbers
+    ssd1306_device = device_create(ssd1306_class, NULL, MKDEV(major_number, 0), NULL, "ssd1306");
+    if (IS_ERR(ssd1306_device)) {
+        printk(KERN_ALERT "Failed to create the device\n");
+        // Cleanup previously allocated resources
+        class_destroy(ssd1306_class);
+        unregister_chrdev_region(MKDEV(major_number, 0), 1);
+        // Handle other cleanups as necessary
+        return PTR_ERR(ssd1306_device);
+    }
+
     // Inside ssd1306_probe after reading properties
-    if (ssd1306_oled_default_config(client, dev)) {
+    if (ssd1306_oled_default_config(&dev->ssd1306)) {
         printk(KERN_ERR "SSD1306: Failed to initialize OLED with specified resolution\n");
         return -EIO;
     }
 
     // clear screen 
     printk(KERN_INFO "SSD1306: Clear Screen \n");
-    ssd1306_oled_clear_screen(dev);
+    ssd1306_oled_clear_screen(&dev->ssd1306);
 
     #if 0
     printk(KERN_INFO "SSD1306: Testing pattern\n");
-    ssd1306_oled_test_image(dev);
+    ssd1306_oled_test_image(&dev->ssd1306);
     #endif
 
     return 0;
@@ -465,7 +605,14 @@ static int ssd1306_probe(struct i2c_client *client, const struct i2c_device_id *
 static void ssd1306_remove(struct i2c_client *client)
 {
     printk(KERN_INFO "SSD1306: OLED device removed\n");
-    // Cleanup code here, if necessary
+
+    struct ssd1306_char_dev *dev = i2c_get_clientdata(client);
+
+    // Cleanup character device
+    cdev_del(&dev->cdev);
+
+
+    printk(KERN_INFO "SSD1306: OLED device removed\n");
 }
 
 // I2C device ID table
@@ -486,10 +633,31 @@ static struct i2c_driver ssd1306_driver = {
     .id_table = ssd1306_id,
 };
 
+
+
 // Module initialization function
 static int __init ssd1306_init(void)
 {
     printk(KERN_INFO "SSD1306: Initializing the SSD1306 OLED driver\n");
+
+    int err;
+
+    // Allocate a major number
+    err = alloc_chrdev_region(&dev_num, 0, 1, "ssd1306");
+    if (err < 0) {
+        printk(KERN_WARNING "SSD1306: Can't allocate device number\n");
+        return err;
+    }
+    major_number = MAJOR(dev_num);
+
+    // Create a device class 
+    ssd1306_class = class_create(THIS_MODULE, "ssd1306");
+    if(IS_ERR(ssd1306_class))
+    {
+        unregister_chrdev_region(MKDEV(major_number, 0), 1);
+        return -1;
+    }
+
     return i2c_add_driver(&ssd1306_driver);
 }
 
@@ -497,8 +665,20 @@ static int __init ssd1306_init(void)
 static void __exit ssd1306_exit(void)
 {
     printk(KERN_INFO "SSD1306: Exiting the SSD1306 OLED driver\n");
+
+    // If you have registered a device class and created a device, remove them as well
+    device_destroy(ssd1306_class, MKDEV(major_number, 0));
+    class_destroy(ssd1306_class);
+
+    // Cleanup device number
+    unregister_chrdev_region(MKDEV(major_number, 0), 1);
+
     i2c_del_driver(&ssd1306_driver);
 }
+
+
+
+
 
 module_init(ssd1306_init);
 module_exit(ssd1306_exit);

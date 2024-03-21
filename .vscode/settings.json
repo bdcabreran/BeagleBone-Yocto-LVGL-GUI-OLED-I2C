@@ -26,6 +26,11 @@
     "files.associations": {
         "i2c-dev.h": "c",
         "ssd1306.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "pr77550.C": "cpp",
+        "fcntl.h": "c",
+        "cstdlib": "c",
+        "*.x": "c",
+        "cstdint": "c"
     }
 }
