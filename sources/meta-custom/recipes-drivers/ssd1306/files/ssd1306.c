@@ -39,9 +39,9 @@ static dev_t dev_num;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static const uint8_t image_width = 62;
-static const uint8_t image_height = 64;
-static const uint8_t image_data[] = {
+static const uint8_t demo_image_width = 62;
+static const uint8_t demo_image_height = 64;
+static const uint8_t demo_image_data[] = {
 
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC, 
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC, 
@@ -387,28 +387,25 @@ uint8_t ssd1306_oled_default_config(struct ssd1306_dev *dev)
     return 0;
 }
 
-void ssd1306_oled_draw_area(struct ssd1306_dev *dev, const uint8_t *image_data, int image_width, int image_height, int start_x, int start_y) {
-    pr_info("Starting to draw area...\n");
+void ssd1306_oled_draw_area(struct ssd1306_dev *dev, const uint8_t *data, int width, int height, int start_x, int start_y) {
+    // pr_info("Starting to draw area...\n");
     // Ensure the starting point and image dimensions do not exceed the display boundaries
     // Adjust start_x and start_y if they are out of bounds to prevent buffer underflow
     if (start_x < 0) start_x = 0;
     if (start_y < 0) start_y = 0;
-    
-    // Clear the framebuffer before drawing the new image
-    memset(dev->framebuffer, 0x00, sizeof(dev->framebuffer));
 
-    for (int y = 0; y < image_height; y++) {
+    for (int y = 0; y < height; y++) {
         int current_y = start_y + y; // Calculate the current y position on the display
         if (current_y >= dev->max_lines) break; // Stop if the y position is beyond the display height
 
-        for (int x = 0; x < image_width; x++) {
+        for (int x = 0; x < width; x++) {
             int current_x = start_x + x; // Calculate the current x position on the display
             if (current_x >= dev->max_columns) break; // Stop if the x position is beyond the display width
 
             // Calculate the index in the image data
-            int index = (y * ((image_width + 7) / 8)) + x / 8;
+            int index = (y * ((width + 7) / 8)) + x / 8;
             // Determine if the pixel should be on or off
-            uint8_t on = (image_data[index] >> (7 - (x % 8))) & 1;
+            uint8_t on = (data[index] >> (7 - (x % 8))) & 1;
             // Draw the pixel at the calculated position on the display
             ssd1306_oled_draw_pixel(dev, current_x, current_y, on);
         }
@@ -416,12 +413,12 @@ void ssd1306_oled_draw_area(struct ssd1306_dev *dev, const uint8_t *image_data, 
 
     // Update the display after drawing is complete
     ssd1306_oled_update_display(dev);
-    pr_info("Area drawing complete.\n");
+    // pr_info("Area drawing complete.\n");
 }
 
 
 void ssd1306_oled_test_image(struct ssd1306_dev *dev) {
-    ssd1306_oled_draw_area(dev, image_data, image_width, image_height, 0, 0);
+    ssd1306_oled_draw_area(dev, demo_image_data, demo_image_width, demo_image_height, 0, 0);
 }
 
 
@@ -438,7 +435,7 @@ static int ssd1306_open(struct inode *inode, struct file *file) {
 }
 
 static ssize_t ssd1306_write(struct file *file, const char __user *buffer, size_t len, loff_t *offset) {
-    printk(KERN_INFO "SSD1306 device write request\n");
+    // printk(KERN_INFO "SSD1306 device write request\n");
     
     struct ssd1306_char_dev *dev = file->private_data;
 
@@ -454,7 +451,7 @@ static ssize_t ssd1306_write(struct file *file, const char __user *buffer, size_
         return -EFAULT;
     }
 
-    printk(KERN_INFO "SSD1306 received command = [%d]\n", packet.data.command);
+    // printk(KERN_INFO "SSD1306 received command = [%d]\n", packet.data.command);
 
     // Parse command
     switch (packet.data.command)
@@ -497,14 +494,13 @@ static ssize_t ssd1306_write(struct file *file, const char __user *buffer, size_
         uint8_t y = packet.data.payload.draw_area.y;
         uint8_t width = packet.data.payload.draw_area.width;
         uint8_t heigh = packet.data.payload.draw_area.height;
-        uint8_t *image_data = packet.data.payload.draw_area.data;
+        uint8_t *demo_image_data = packet.data.payload.draw_area.data;
 
         if (width == 0 || heigh == 0) {
-            printk(KERN_INFO "SSD1306 invalid width or heigh, Loading demo image\n");
-            ssd1306_oled_test_image(&dev->ssd1306);
+            printk(KERN_INFO "SSD1306 invalid width or heigh\n");
         }
         else {
-            ssd1306_oled_draw_area(&dev->ssd1306, image_data, width, heigh, x, y);
+            ssd1306_oled_draw_area(&dev->ssd1306, demo_image_data, width, heigh, x, y);
         }
     }
     break;

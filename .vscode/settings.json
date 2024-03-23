@@ -32,6 +32,8 @@
         "cstdlib": "c",
         "*.x": "c",
         "cstdint": "c",
-        "linux_logo.h": "c"
+        "linux_logo.h": "c",
+        "ui.h": "c",
+        "lv_demos.h": "c"
     }
 }
