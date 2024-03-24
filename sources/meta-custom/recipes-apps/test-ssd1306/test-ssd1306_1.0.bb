@@ -25,7 +25,7 @@ SRC_URI = "file://main.c \
 S = "${WORKDIR}"
 
 # Add dependencies required for your application here
-DEPENDS = ""
+DEPENDS = "ssd1306-driver"
 
 # Specify the install task
 do_install() {
