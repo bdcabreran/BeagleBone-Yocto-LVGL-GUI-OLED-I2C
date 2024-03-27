@@ -7,3 +7,7 @@ scan i2c devices: i2cdetect -r 2
 
 // convert the DTB back into a human-readable DTS format:
 fdtdump am335x-boneblack.dtb > dumped.dts
+
+
+
+tar -czvf myfiles.tar.gz files/

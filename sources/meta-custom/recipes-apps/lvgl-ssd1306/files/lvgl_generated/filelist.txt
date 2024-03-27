@@ -1,0 +1,16 @@
+screens/ui_MainScreen.c
+screens/ui_ClockScreen.c
+screens/ui_GraphScreen.c
+screens/ui_MusicScreen.c
+ui.c
+components/ui_comp_hook.c
+ui_helpers.c
+ui_events.c
+images/ui_img_clock_rz_png.c
+images/ui_img_bar_chart_rz_png.c
+images/ui_img_1888242194.c
+images/ui_img_pause_rz_png.c
+images/ui_img_backward_rz_png.c
+fonts/ui_font_CounterStream.c
+fonts/ui_font_SevenSegment.c
+fonts/ui_font_SevenSegmentSmall.c

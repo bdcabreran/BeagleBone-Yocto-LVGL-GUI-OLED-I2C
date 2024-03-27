@@ -1,35 +1,52 @@
+#
 # Makefile
-
+#
 CC ?= gcc
-CFLAGS = -Wall
+LVGL_DIR_NAME ?= lvgl
+LVGL_DIR ?= ${shell pwd}
+CFLAGS ?= -O3 -g0 -I$(LVGL_DIR)/ -Wall -Wshadow -Wundef -Wmissing-prototypes -Wno-discarded-qualifiers -Wall -Wextra -Wno-unused-function -Wno-error=strict-prototypes -Wpointer-arith -fno-strict-aliasing -Wno-error=cpp -Wuninitialized -Wmaybe-uninitialized -Wno-unused-parameter -Wno-missing-field-initializers -Wtype-limits -Wsizeof-pointer-memaccess -Wno-format-nonliteral -Wno-cast-qual -Wunreachable-code -Wno-switch-default -Wreturn-type -Wmultichar -Wformat-security -Wno-ignored-qualifiers -Wno-error=pedantic -Wno-sign-compare -Wno-error=missing-prototypes -Wdouble-promotion -Wclobbered -Wdeprecated -Wempty-body -Wtype-limits -Wshift-negative-value -Wstack-usage=2048 -Wno-unused-value -Wno-unused-parameter -Wno-missing-field-initializers -Wuninitialized -Wmaybe-uninitialized -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wtype-limits -Wsizeof-pointer-memaccess -Wno-format-nonliteral -Wpointer-arith -Wno-cast-qual -Wmissing-prototypes -Wunreachable-code -Wno-switch-default -Wreturn-type -Wmultichar -Wno-discarded-qualifiers -Wformat-security -Wno-ignored-qualifiers -Wno-sign-compare -std=c99
+LDFLAGS ?= -lm
+BIN = demo
 
-# CFLAGS += -I/yocto/build/tmp/work/cortexa8hf-neon-poky-linux-gnueabi/lvgl/8.3.10/recipe-sysroot/usr/include
-# LDFLAGS += -L/yocto/build/tmp/work/cortexa8hf-neon-poky-linux-gnueabi/lvgl/8.3.10/recipe-sysroot/usr/lib -llvgl
+prefix ?= /usr
+bindir ?= $(prefix)/bin
 
+#Collect the files to compile
+MAINSRC = ./main.c
 
-# Include all source files here with their respective directories
-# SRCS = main.c \
-#        folder1/file.c \
-#        folder2/file2.c \
+include $(LVGL_DIR)/lvgl/lvgl.mk
+include $(LVGL_DIR)/lv_drivers/lv_drivers.mk
+include $(LVGL_DIR)/lvgl_generated/lvgl_generated.mk
 
-SRCS = main.c 
+CSRCS +=$(LVGL_DIR)/mouse_cursor_icon.c 
 
-# Object files are based on the source files
-# This substitution command replaces '.c' with '.o' in source filenames
-OBJS = $(SRCS:.c=.o)
+OBJEXT ?= .o
 
-all: lvgl-ssd1306
+AOBJS = $(ASRCS:.S=$(OBJEXT))
+COBJS = $(CSRCS:.c=$(OBJEXT))
 
-# Link object files to create the executable
-# $^ refers to all the dependencies in the rule, which are the object files in this case
-lvgl-ssd1306: $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+MAINOBJ = $(MAINSRC:.c=$(OBJEXT))
 
-# Compile source files into object files
-# $< refers to the first dependency in the rule, which is a source file here
-# $@ refers to the target of the rule, which is the object file here
+SRCS = $(ASRCS) $(CSRCS) $(MAINSRC)
+OBJS = $(AOBJS) $(COBJS)
+
+## MAINOBJ -> OBJFILES
+
+all: default
+
 %.o: %.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
+	@$(CC)  $(CFLAGS) -c $< -o $@
+	@echo "CC $<"
+    
+default: $(AOBJS) $(COBJS) $(MAINOBJ)
+	$(CC) -o $(BIN) $(MAINOBJ) $(AOBJS) $(COBJS) $(LDFLAGS)
 
-clean:
-	rm -f lvgl-ssd1306 $(OBJS)
+clean: 
+	rm -f $(BIN) $(AOBJS) $(COBJS) $(MAINOBJ)
+
+install:
+	install -d $(DESTDIR)$(bindir)
+	install $(BIN) $(DESTDIR)$(bindir)
+
+uninstall:
+	$(RM) -r $(addprefix $(DESTDIR)$(bindir)/,$(BIN))
