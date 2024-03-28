@@ -1,0 +1,23 @@
+# Network Configuration
+ipaddr=192.168.1.2
+serverip=192.168.1.1
+
+# NFS Root Filesystem Configuration
+nfsroot=192.168.1.1:/nfs/beaglebone,nfsvers=3,tcp
+
+# TFTP File Paths
+kernel_image=zImage
+dtb_file=am335x-boneblack.dtb
+
+
+# Boot Commands
+# Load the kernel and dtb via TFTP
+bootcmd=run loadkernel; run loadfdt; run setbootargs; bootz ${loadaddr} - ${fdtaddr}
+
+# Helper Commands
+loadkernel=tftp ${loadaddr} ${serverip}:${kernel_image}
+loadfdt=tftp ${fdtaddr} ${serverip}:${dtb_file}
+setbootargs=setenv bootargs console=${console} root=/dev/nfs nfsroot=${nfsroot} ip=${ipaddr} rw
+
+# Default boot command sequence
+uenvcmd=run bootcmd

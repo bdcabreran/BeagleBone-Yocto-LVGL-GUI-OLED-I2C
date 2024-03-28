@@ -1,0 +1,39 @@
+{
+    "python.autoComplete.extraPaths": [
+        "${workspaceFolder}/sources/poky/bitbake/lib",
+        "${workspaceFolder}/sources/poky/meta/lib"
+    ],
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/sources/poky/bitbake/lib",
+        "${workspaceFolder}/sources/poky/meta/lib"
+    ],
+    "[python]": {
+        "diffEditor.ignoreTrimWhitespace": false,
+        "gitlens.codeLens.symbolScopes": [
+            "!Module"
+        ],
+        "editor.formatOnType": true,
+        "editor.wordBasedSuggestions": "off",
+        "files.trimTrailingWhitespace": false
+    },
+    "[shellscript]": {
+        "files.eol": "\n",
+        "files.trimTrailingWhitespace": false
+    },
+    "bitbake.buildConfigurations": [
+        
+    ],
+    "files.associations": {
+        "i2c-dev.h": "c",
+        "ssd1306.h": "c",
+        "string.h": "c",
+        "pr77550.C": "cpp",
+        "fcntl.h": "c",
+        "cstdlib": "c",
+        "*.x": "c",
+        "cstdint": "c",
+        "linux_logo.h": "c",
+        "ui.h": "c",
+        "lv_demos.h": "c"
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "configurations": [
+        {
+            "name": "Yocto Linux Kernel Development",
+            "includePath": [
+                "${workspaceFolder}/build/tmp/work-shared/**",
+                "/yocto/build/tmp/work-shared/beaglebone-yocto/kernel-source/include",
+                "/yocto/build/tmp/work-shared/beaglebone-yocto/kernel-source/arch/arm/include",
+                "/yocto/build/tmp/work-shared/beaglebone-yocto/kernel-source/include/uapi"
+            ],
+            "defines": [
+                "__KERNEL__",
+                "CONFIG_ARM"
+            ],
+            "compilerPath": "/yocto/build/tmp/sysroots-components/x86_64/gcc-cross-arm/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc",
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "gcc-arm",
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "${workspaceFolder}/build/tmp/work-shared/**",
+                    "/yocto/build/tmp/work-shared/beaglebone-yocto/kernel-source/**"
+                ]
+            }
+        }
+    ],
+    "version": 4
+}
