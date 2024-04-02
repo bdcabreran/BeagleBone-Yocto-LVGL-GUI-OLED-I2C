@@ -32,17 +32,26 @@ This project aims to integrate a graphical user interface (GUI) created with LVG
 
     ```bash
     cd yocto/sources
-    git clone -b nanbield git://git.yoctoproject.org/poky.git my-nanbield
+    git clone -b nanbield git://git.yoctoproject.org/poky.git
     ```
 
-2. Initialize the Yocto build environment:
+2. Clone `meta-openembedded`
+
+    Due to a compatibility issue with the `kirkstone` branch in `meta-openembedded`, we use the `nanbield` branch. Clone it into `/yocto/sources/`.
+
+    ```bash
+    cd /yocto/sources/
+    git clone -b nanbield https://github.com/openembedded/meta-openembedded.git
+    ```
+
+3. Initialize the Yocto build environment:
 
     ```bash
     
     source sources/poky/oe-init-build-env build
     ```
 
-3. Configure the build for BeagleBone by editing `conf/local.conf` and `conf/bblayers.conf` as necessary.
+4. Configure the build for BeagleBone by editing `conf/local.conf` and `conf/bblayers.conf` as necessary.
 
 ## Step 2: Adding Necessary Layers
 
